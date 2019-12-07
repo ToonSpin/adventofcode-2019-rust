@@ -180,7 +180,6 @@ impl Program {
             }
             Opcode::Input => {
                 if self.input.len() > self.input_pos {
-                    self.state = ProgramState::Running;
                     let pos = self.program[(self.sp + 1) as usize];
                     self.program[pos as usize] = self.get_input();
                 } else {
