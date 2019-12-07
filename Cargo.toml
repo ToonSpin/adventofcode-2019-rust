@@ -4,5 +4,9 @@ version = "0.1.0"
 authors = ["Toon Spin <toon.spin@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "intcode"
+path = "src/lib/intcode.rs"
+
 [dependencies]
 nom = "5"
