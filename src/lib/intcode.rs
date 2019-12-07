@@ -29,7 +29,7 @@ impl Opcode {
             7 => Opcode::LessThan,
             8 => Opcode::Equals,
             99 => Opcode::Halt,
-            _ => unreachable!(),
+            _ => { panic!("Unknown opcode: {}", i) },
         }
     }
 }
@@ -68,6 +68,7 @@ enum ProgramState {
     Halted,
 }
 
+/// Contains an Intcode program.
 pub struct Program {
     program: Vec<i32>,
     sp: usize,
@@ -79,6 +80,9 @@ pub struct Program {
 }
 
 impl Program {
+    /// Creates a new Intcode program.
+    ///
+    /// The `Program` returned will start out as Running.
     pub fn new(program_vec: &Vec<i32>) -> Program {
         Program {
             program: program_vec.clone(),
@@ -91,6 +95,7 @@ impl Program {
         }
     }
 
+    /// Adds a value to the program's input queue.
     pub fn push_input(&mut self, i: i32) {
         self.input.push(i);
         if let ProgramState::WaitingForInput = self.state {
@@ -108,10 +113,23 @@ impl Program {
         result
     }
 
+    /// Return `true` if and only if this program's output queue is not empty.
     pub fn has_output(&mut self) -> bool {
         self.output_pos < self.output.len()
     }
 
+    /// Returns the last output generated, even if it has already been consumed.
+    /// If no outputs have been generated yet, this will return `None`.
+    ///
+    /// # Example
+    /// ```
+    /// let mut program = intcode::Program::new(&vec![4, 5, 4, 6, 99, 1, 2]);
+    /// program.run_till_halted_or_blocked();
+    /// assert_eq!(program.get_output(), Some(1));
+    /// assert_eq!(program.get_output(), Some(2));
+    /// assert_eq!(program.get_output(), None);
+    /// assert_eq!(program.last_output(), Some(2));
+    /// ```
     pub fn last_output(&mut self) -> Option<i32> {
         if self.output.len() > 0 {
             Some(self.output[self.output.len() - 1])
@@ -120,6 +138,19 @@ impl Program {
         }
     }
 
+    /// Consumes and returns the first output in the output queue that has not
+    /// been consumed. If no outputs have been generated yet, this will return
+    /// `None`.
+    ///
+    /// # Example
+    /// ```
+    /// let mut program = intcode::Program::new(&vec![4, 5, 4, 6, 99, 1, 2]);
+    /// program.run_till_halted_or_blocked();
+    /// assert_eq!(program.get_output(), Some(1));
+    /// assert_eq!(program.get_output(), Some(2));
+    /// assert_eq!(program.get_output(), None);
+    /// assert_eq!(program.last_output(), Some(2));
+    /// ```
     pub fn get_output(&mut self) -> Option<i32> {
         if self.has_output() {
             self.output_pos += 1;
@@ -132,15 +163,15 @@ impl Program {
     fn increase_sp(&mut self) {
         let instruction = Instruction::from(self.program[self.sp]);
         self.sp += match instruction.opcode {
-                Opcode::Add => 4,
-                Opcode::Multiply => 4,
-                Opcode::Input => 2,
-                Opcode::Output => 2,
-                Opcode::JumpIfTrue => 3,
-                Opcode::JumpIfFalse => 3,
-                Opcode::LessThan => 4,
-                Opcode::Equals => 4,
-                Opcode::Halt => 0,
+            Opcode::Add => 4,
+            Opcode::Multiply => 4,
+            Opcode::Input => 2,
+            Opcode::Output => 2,
+            Opcode::JumpIfTrue => 3,
+            Opcode::JumpIfFalse => 3,
+            Opcode::LessThan => 4,
+            Opcode::Equals => 4,
+            Opcode::Halt => 0,
         }
     }
 
@@ -166,7 +197,7 @@ impl Program {
         let mut bump_sp = true;
 
         if let ProgramState::Halted = self.state {
-            panic!("Attempted to run a halted program, start first");
+            panic!("Attempted to run a halted program.");
         }
 
         match instruction.opcode {
@@ -219,6 +250,8 @@ impl Program {
         }
     }
 
+    /// Returns `true` if and only if the program is in the "halted" state. This
+    /// can only happen if the appropriate opcode has been executed.
     pub fn halted(&mut self) -> bool {
         match self.state {
             ProgramState::Running => false,
@@ -227,6 +260,8 @@ impl Program {
         }
     }
 
+    /// Returns `true` if and only if the program is in the "halted" state, or
+    /// is waiting for input.
     pub fn halted_or_blocked(&mut self) -> bool {
         match self.state {
             ProgramState::Running => false,
@@ -235,10 +270,32 @@ impl Program {
         }
     }
 
-    pub fn start(&mut self) {
-        self.state = ProgramState::Running;
-    }
-
+    /// Starts running the program until it can't run any further.
+    ///
+    /// This will go through the instructions of the program until it halts, or
+    /// encounters an "input" opcode but has no input. If the latter happens,
+    /// then you can call this method again after supplying input to make the
+    /// program resume execution.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the program is in "halted" state when the method is called, or
+    /// if an unknown opcode is encountered.
+    ///
+    /// # Example
+    /// ```
+    /// let mut program = intcode::Program::new(&vec![3, 5, 4, 5, 99, 0]);
+    /// program.run_till_halted_or_blocked();
+    ///
+    /// assert_eq!(program.get_output(), None);
+    /// assert!(!program.halted());
+    ///
+    /// program.push_input(123);
+    /// program.run_till_halted_or_blocked();
+    ///
+    /// assert_eq!(program.get_output(), Some(123));
+    /// assert!(program.halted());
+    /// ```
     pub fn run_till_halted_or_blocked(&mut self) {
         while !self.halted_or_blocked() {
             self.execute_instruction();
