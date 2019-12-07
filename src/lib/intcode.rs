@@ -163,7 +163,6 @@ impl Program {
 
     fn execute_instruction(&mut self) {
         let instruction = Instruction::from(self.program[self.sp]);
-        let mut program = self.program.clone();
         let mut bump_sp = true;
 
         if let ProgramState::Halted = self.state {
@@ -172,18 +171,18 @@ impl Program {
 
         match instruction.opcode {
             Opcode::Add => {
-                let pos = program[(self.sp + 3) as usize];
-                program[pos as usize] = self.param(1) + self.param(2);
+                let pos = self.program[(self.sp + 3) as usize];
+                self.program[pos as usize] = self.param(1) + self.param(2);
             }
             Opcode::Multiply => {
-                let pos = program[(self.sp + 3) as usize];
-                program[pos as usize] = self.param(1) * self.param(2);
+                let pos = self.program[(self.sp + 3) as usize];
+                self.program[pos as usize] = self.param(1) * self.param(2);
             }
             Opcode::Input => {
                 if self.input.len() > self.input_pos {
                     self.state = ProgramState::Running;
-                    let pos = program[(self.sp + 1) as usize];
-                    program[pos as usize] = self.get_input();
+                    let pos = self.program[(self.sp + 1) as usize];
+                    self.program[pos as usize] = self.get_input();
                 } else {
                     bump_sp = false;
                     self.state = ProgramState::WaitingForInput;
@@ -205,12 +204,12 @@ impl Program {
                 }
             }
             Opcode::LessThan => {
-                let pos = program[(self.sp + 3) as usize];
-                program[pos as usize] = if self.param(1) < self.param(2) { 1 } else { 0 };
+                let pos = self.program[(self.sp + 3) as usize];
+                self.program[pos as usize] = if self.param(1) < self.param(2) { 1 } else { 0 };
             }
             Opcode::Equals => {
-                let pos = program[(self.sp + 3) as usize];
-                program[pos as usize] = if self.param(1) == self.param(2) { 1 } else { 0 };
+                let pos = self.program[(self.sp + 3) as usize];
+                self.program[pos as usize] = if self.param(1) == self.param(2) { 1 } else { 0 };
             }
             Opcode::Halt => {
                 self.state = ProgramState::Halted;
@@ -219,7 +218,6 @@ impl Program {
         if bump_sp {
             self.increase_sp();
         }
-        self.program = program;
     }
 
     pub fn halted(&mut self) -> bool {
