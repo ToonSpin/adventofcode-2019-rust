@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 /// All values in any program's memory are of this type.
-pub type Number = i32;
+pub type Number = i64;
 
 #[derive(Debug)]
 enum ParameterMode {
@@ -344,4 +344,12 @@ fn test_get_set_extra_memory() {
     let mut p = Program::new(&vec![1, 1, 1, 1]);
     p.set_mem(100, 2);
     assert_eq!(p.get_mem(100), 2);
+}
+
+#[test]
+fn test_large_numbers() {
+    let v = vec![104,1125899906842624,99];
+    let mut p = Program::new(&v);
+    p.run_till_halted_or_blocked();
+    assert_eq!(p.get_output().unwrap(), 1125899906842624);
 }
