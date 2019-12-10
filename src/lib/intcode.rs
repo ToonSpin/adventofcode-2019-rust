@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 enum ParameterMode {
     Immediate,
@@ -77,6 +79,7 @@ pub struct Program {
     output: Vec<i32>,
     output_pos: usize,
     state: ProgramState,
+    extra_memory: HashMap<usize, i32>
 }
 
 impl Program {
@@ -91,7 +94,8 @@ impl Program {
             input_pos: 0,
             output: Vec::new(),
             output_pos: 0,
-            state: ProgramState::Running
+            state: ProgramState::Running,
+            extra_memory: HashMap::new(),
         }
     }
 
@@ -193,11 +197,21 @@ impl Program {
     }
 
     fn get_mem(&self, pos: usize) -> i32 {
-        self.program[pos]
+        if pos < self.program.len() {
+            self.program[pos]
+        } else if self.extra_memory.contains_key(&pos) {
+            *self.extra_memory.get(&pos).unwrap()
+        } else {
+            0
+        }
     }
 
     fn set_mem(&mut self, pos: usize, val: i32) {
-        self.program[pos] = val
+        if pos < self.program.len() {
+            self.program[pos] = val;
+        } else {
+            self.extra_memory.insert(pos, val);
+        }
     }
 
     fn execute_instruction(&mut self) {
@@ -312,4 +326,19 @@ impl Program {
             self.execute_instruction();
         }
     }
+}
+
+#[test]
+fn test_get_set_mem() {
+    let mut p = Program::new(&vec![1, 1, 1, 1]);
+    assert_eq!(p.get_mem(0), 1);
+    p.set_mem(0, 2);
+    assert_eq!(p.get_mem(0), 2);
+}
+
+#[test]
+fn test_get_set_extra_memory() {
+    let mut p = Program::new(&vec![1, 1, 1, 1]);
+    p.set_mem(100, 2);
+    assert_eq!(p.get_mem(100), 2);
 }
