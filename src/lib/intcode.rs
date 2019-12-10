@@ -161,7 +161,7 @@ impl Program {
     }
 
     fn increase_sp(&mut self) {
-        let instruction = Instruction::from(self.program[self.sp]);
+        let instruction = Instruction::from(self.get_mem(self.sp));
         self.sp += match instruction.opcode {
             Opcode::Add => 4,
             Opcode::Multiply => 4,
@@ -176,8 +176,8 @@ impl Program {
     }
 
     fn param(&self, param: usize) -> i32{
-        let instruction = Instruction::from(self.program[self.sp]);
-        let value = self.program[self.sp + param];
+        let instruction = Instruction::from(self.get_mem(self.sp));
+        let value = self.get_mem(self.sp + param);
 
         let mode = match param {
             1 => instruction.param1,
@@ -188,12 +188,20 @@ impl Program {
 
         match mode {
             ParameterMode::Immediate => { value },
-            ParameterMode::Position => { self.program[value as usize] },
+            ParameterMode::Position => { self.get_mem(value as usize) },
         }
     }
 
+    fn get_mem(&self, pos: usize) -> i32 {
+        self.program[pos]
+    }
+
+    fn set_mem(&mut self, pos: usize, val: i32) {
+        self.program[pos] = val
+    }
+
     fn execute_instruction(&mut self) {
-        let instruction = Instruction::from(self.program[self.sp]);
+        let instruction = Instruction::from(self.get_mem(self.sp));
         let mut bump_sp = true;
 
         if let ProgramState::Halted = self.state {
@@ -202,17 +210,18 @@ impl Program {
 
         match instruction.opcode {
             Opcode::Add => {
-                let pos = self.program[(self.sp + 3) as usize];
-                self.program[pos as usize] = self.param(1) + self.param(2);
+                let pos = self.get_mem((self.sp + 3) as usize);
+                self.set_mem(pos as usize, self.param(1) + self.param(2));
             }
             Opcode::Multiply => {
-                let pos = self.program[(self.sp + 3) as usize];
-                self.program[pos as usize] = self.param(1) * self.param(2);
+                let pos = self.get_mem((self.sp + 3) as usize);
+                self.set_mem(pos as usize, self.param(1) * self.param(2));
             }
             Opcode::Input => {
                 if self.input.len() > self.input_pos {
-                    let pos = self.program[(self.sp + 1) as usize];
-                    self.program[pos as usize] = self.get_input();
+                    let pos = self.get_mem((self.sp + 1) as usize);
+                    let input = self.get_input();
+                    self.set_mem(pos as usize, input);
                 } else {
                     bump_sp = false;
                     self.state = ProgramState::WaitingForInput;
@@ -234,12 +243,14 @@ impl Program {
                 }
             }
             Opcode::LessThan => {
-                let pos = self.program[(self.sp + 3) as usize];
-                self.program[pos as usize] = if self.param(1) < self.param(2) { 1 } else { 0 };
+                let pos = self.get_mem((self.sp + 3) as usize);
+                let result = if self.param(1) < self.param(2) { 1 } else { 0 };
+                self.set_mem(pos as usize, result);
             }
             Opcode::Equals => {
-                let pos = self.program[(self.sp + 3) as usize];
-                self.program[pos as usize] = if self.param(1) == self.param(2) { 1 } else { 0 };
+                let pos = self.get_mem((self.sp + 3) as usize);
+                let result = if self.param(1) == self.param(2) { 1 } else { 0 };
+                self.set_mem(pos as usize, result);
             }
             Opcode::Halt => {
                 self.state = ProgramState::Halted;
