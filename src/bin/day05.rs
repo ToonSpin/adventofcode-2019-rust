@@ -2,8 +2,9 @@ use std::io;
 use std::io::prelude::*;
 
 use intcode::Program;
+use intcode::Number;
 
-fn get_diagnostic_code(program: &Vec<i32>, first_input: i32) -> i32 {
+fn get_diagnostic_code(program: &Vec<Number>, first_input: Number) -> Number {
     let mut p = Program::new(program);
 
     p.push_input(first_input);
@@ -17,7 +18,7 @@ fn main() -> io::Result<()> {
     io::stdin().lock().read_to_string(&mut input).unwrap();
 
     let input = input.split('\n').next().unwrap();
-    let input: Vec<i32> = input.split(',').map(|s| s.parse::<i32>().unwrap()).collect();
+    let input: Vec<Number> = input.split(',').map(|s| s.parse::<Number>().unwrap()).collect();
     
     let program = input.clone();
 

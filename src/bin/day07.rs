@@ -4,8 +4,9 @@ use std::io::prelude::*;
 use std::collections::HashSet;
 
 use intcode::Program;
+use intcode::Number;
 
-fn get_result_part1(settings: Vec<i32>, program: &Vec<i32>) -> i32 {
+fn get_result_part1(settings: Vec<Number>, program: &Vec<Number>) -> Number {
     let mut output = 0;
 
     for setting in settings.iter() {
@@ -19,7 +20,7 @@ fn get_result_part1(settings: Vec<i32>, program: &Vec<i32>) -> i32 {
     output
 }
 
-fn get_result_part2(settings: Vec<i32>, program: &Vec<i32>) -> i32 {
+fn get_result_part2(settings: Vec<Number>, program: &Vec<Number>) -> Number {
     let mut programs: Vec<Program> = Vec::new();
     let num_programs = settings.len();
 
@@ -65,8 +66,8 @@ fn test_part2() {
     assert_eq!(get_result_part2(vec![9,7,8,5,6], &v), 18216);
 }
 
-fn valid_input(input: &Vec<i32>) -> bool {
-    let mut found: HashSet<i32> = HashSet::new();
+fn valid_input(input: &Vec<Number>) -> bool {
+    let mut found: HashSet<Number> = HashSet::new();
     for i in input.iter() {
         if found.insert(*i) == false {
             return false;
@@ -80,7 +81,7 @@ fn main() -> io::Result<()> {
     io::stdin().lock().read_to_string(&mut input).unwrap();
 
     let input = input.split('\n').next().unwrap();
-    let input: Vec<i32> = input.split(',').map(|s| s.parse::<i32>().unwrap()).collect();
+    let input: Vec<Number> = input.split(',').map(|s| s.parse::<Number>().unwrap()).collect();
     
     let program = input.clone();
 

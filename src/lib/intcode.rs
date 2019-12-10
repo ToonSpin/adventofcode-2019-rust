@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+/// All values in any program's memory are of this type.
+pub type Number = i32;
+
 #[derive(Debug)]
 enum ParameterMode {
     Immediate,
@@ -20,7 +23,7 @@ enum Opcode {
 }
 
 impl Opcode {
-    fn from(i: i32) -> Opcode {
+    fn from(i: Number) -> Opcode {
         match i {
             1 => Opcode::Add,
             2 => Opcode::Multiply,
@@ -45,7 +48,7 @@ struct Instruction {
 }
 
 impl Instruction {
-    fn from(mut i: i32) -> Instruction {
+    fn from(mut i: Number) -> Instruction {
         let opcode = Opcode::from(i % 100);
         i /= 100;
         let param1 = if i % 10 == 0 { ParameterMode::Position } else { ParameterMode::Immediate };
@@ -72,21 +75,21 @@ enum ProgramState {
 
 /// Contains an Intcode program.
 pub struct Program {
-    program: Vec<i32>,
+    program: Vec<Number>,
     sp: usize,
-    input: Vec<i32>,
+    input: Vec<Number>,
     input_pos: usize,
-    output: Vec<i32>,
+    output: Vec<Number>,
     output_pos: usize,
     state: ProgramState,
-    extra_memory: HashMap<usize, i32>
+    extra_memory: HashMap<usize, Number>,
 }
 
 impl Program {
     /// Creates a new Intcode program.
     ///
     /// The `Program` returned will start out as Running.
-    pub fn new(program_vec: &Vec<i32>) -> Program {
+    pub fn new(program_vec: &Vec<Number>) -> Program {
         Program {
             program: program_vec.clone(),
             sp: 0,
@@ -100,18 +103,18 @@ impl Program {
     }
 
     /// Adds a value to the program's input queue.
-    pub fn push_input(&mut self, i: i32) {
+    pub fn push_input(&mut self, i: Number) {
         self.input.push(i);
         if let ProgramState::WaitingForInput = self.state {
             self.state = ProgramState::Running;
         }
     }
 
-    fn push_output(&mut self, i: i32) {
+    fn push_output(&mut self, i: Number) {
         self.output.push(i);
     }
 
-    fn get_input(&mut self) -> i32 {
+    fn get_input(&mut self) -> Number {
         let result = self.input[self.input_pos];
         self.input_pos += 1;
         result
@@ -134,7 +137,7 @@ impl Program {
     /// assert_eq!(program.get_output(), None);
     /// assert_eq!(program.last_output(), Some(2));
     /// ```
-    pub fn last_output(&mut self) -> Option<i32> {
+    pub fn last_output(&mut self) -> Option<Number> {
         if self.output.len() > 0 {
             Some(self.output[self.output.len() - 1])
         } else {
@@ -155,7 +158,7 @@ impl Program {
     /// assert_eq!(program.get_output(), None);
     /// assert_eq!(program.last_output(), Some(2));
     /// ```
-    pub fn get_output(&mut self) -> Option<i32> {
+    pub fn get_output(&mut self) -> Option<Number> {
         if self.has_output() {
             self.output_pos += 1;
             Some(self.output[self.output_pos - 1])
@@ -179,7 +182,7 @@ impl Program {
         }
     }
 
-    fn param(&self, param: usize) -> i32{
+    fn param(&self, param: usize) -> Number{
         let instruction = Instruction::from(self.get_mem(self.sp));
         let value = self.get_mem(self.sp + param);
 
@@ -196,7 +199,7 @@ impl Program {
         }
     }
 
-    fn get_mem(&self, pos: usize) -> i32 {
+    fn get_mem(&self, pos: usize) -> Number {
         if pos < self.program.len() {
             self.program[pos]
         } else if self.extra_memory.contains_key(&pos) {
@@ -206,7 +209,7 @@ impl Program {
         }
     }
 
-    fn set_mem(&mut self, pos: usize, val: i32) {
+    fn set_mem(&mut self, pos: usize, val: Number) {
         if pos < self.program.len() {
             self.program[pos] = val;
         } else {
