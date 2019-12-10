@@ -146,12 +146,11 @@ impl Program {
     ///
     /// # Example
     /// ```
-    /// let mut program = intcode::Program::new(&vec![4, 5, 4, 6, 99, 1, 2]);
+    /// let mut program = intcode::Program::new(&vec![4, 3, 99, 1]);
     /// program.run_till_halted_or_blocked();
     /// assert_eq!(program.get_output(), Some(1));
-    /// assert_eq!(program.get_output(), Some(2));
     /// assert_eq!(program.get_output(), None);
-    /// assert_eq!(program.last_output(), Some(2));
+    /// assert_eq!(program.last_output(), Some(1));
     /// ```
     pub fn last_output(&mut self) -> Option<Number> {
         if self.output.len() > 0 {
@@ -172,7 +171,6 @@ impl Program {
     /// assert_eq!(program.get_output(), Some(1));
     /// assert_eq!(program.get_output(), Some(2));
     /// assert_eq!(program.get_output(), None);
-    /// assert_eq!(program.last_output(), Some(2));
     /// ```
     pub fn get_output(&mut self) -> Option<Number> {
         if self.has_output() {
