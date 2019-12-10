@@ -5,8 +5,20 @@ pub type Number = i64;
 
 #[derive(Debug)]
 enum ParameterMode {
+    Position,
     Immediate,
-    Position
+    Relative,
+}
+
+impl ParameterMode {
+    fn from(i: Number) -> ParameterMode {
+        match i {
+            0 => ParameterMode::Position,
+            1 => ParameterMode::Immediate,
+            2 => ParameterMode::Relative,
+            _ => panic!("Unknown parameter mode: {}", i)
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -19,6 +31,7 @@ enum Opcode {
     JumpIfFalse,
     LessThan,
     Equals,
+    RelativeBaseOffset,
     Halt,
 }
 
@@ -33,6 +46,7 @@ impl Opcode {
             6 => Opcode::JumpIfFalse,
             7 => Opcode::LessThan,
             8 => Opcode::Equals,
+            9 => Opcode::RelativeBaseOffset,
             99 => Opcode::Halt,
             _ => { panic!("Unknown opcode: {}", i) },
         }
@@ -51,11 +65,11 @@ impl Instruction {
     fn from(mut i: Number) -> Instruction {
         let opcode = Opcode::from(i % 100);
         i /= 100;
-        let param1 = if i % 10 == 0 { ParameterMode::Position } else { ParameterMode::Immediate };
+        let param1 = ParameterMode::from(i % 10);
         i /= 10;
-        let param2 = if i % 10 == 0 { ParameterMode::Position } else { ParameterMode::Immediate };
+        let param2 = ParameterMode::from(i % 10);
         i /= 10;
-        let param3 = if i % 10 == 0 { ParameterMode::Position } else { ParameterMode::Immediate };
+        let param3 = ParameterMode::from(i % 10);
 
         Instruction {
             opcode,
@@ -83,6 +97,7 @@ pub struct Program {
     output_pos: usize,
     state: ProgramState,
     extra_memory: HashMap<usize, Number>,
+    relative_base: Number,
 }
 
 impl Program {
@@ -99,6 +114,7 @@ impl Program {
             output_pos: 0,
             state: ProgramState::Running,
             extra_memory: HashMap::new(),
+            relative_base: 0,
         }
     }
 
@@ -178,11 +194,12 @@ impl Program {
             Opcode::JumpIfFalse => 3,
             Opcode::LessThan => 4,
             Opcode::Equals => 4,
+            Opcode::RelativeBaseOffset => 2,
             Opcode::Halt => 0,
         }
     }
 
-    fn param(&self, param: usize) -> Number{
+    fn param(&self, param: usize) -> Number {
         let instruction = Instruction::from(self.get_mem(self.sp));
         let value = self.get_mem(self.sp + param);
 
@@ -194,8 +211,30 @@ impl Program {
         };
 
         match mode {
-            ParameterMode::Immediate => { value },
             ParameterMode::Position => { self.get_mem(value as usize) },
+            ParameterMode::Immediate => { value },
+            ParameterMode::Relative => { self.get_mem((self.relative_base + value) as usize) },
+        }
+    }
+
+    /// Returns a position to write to or read from, taking into account the
+    /// parameter mode. The number passed in is the parameter that needs to be
+    /// converted into the appropriate position (so 3 for opcode 1, etc).
+    fn get_pos(&self, param: usize) -> usize {
+        let instruction = Instruction::from(self.get_mem(self.sp));
+        let pos = self.get_mem(self.sp + param);
+
+        let mode = match param {
+            1 => instruction.param1,
+            2 => instruction.param2,
+            3 => instruction.param3,
+            _ => unreachable!()
+        };
+
+        match mode {
+            ParameterMode::Position => { pos as usize },
+            ParameterMode::Immediate => { panic!("Can't get an immediate position!") },
+            ParameterMode::Relative => { (self.relative_base + pos) as usize },
         }
     }
 
@@ -227,18 +266,17 @@ impl Program {
 
         match instruction.opcode {
             Opcode::Add => {
-                let pos = self.get_mem((self.sp + 3) as usize);
+                let pos = self.get_pos(3);
                 self.set_mem(pos as usize, self.param(1) + self.param(2));
             }
             Opcode::Multiply => {
-                let pos = self.get_mem((self.sp + 3) as usize);
+                let pos = self.get_pos(3);
                 self.set_mem(pos as usize, self.param(1) * self.param(2));
             }
             Opcode::Input => {
                 if self.input.len() > self.input_pos {
-                    let pos = self.get_mem((self.sp + 1) as usize);
                     let input = self.get_input();
-                    self.set_mem(pos as usize, input);
+                    self.set_mem(self.get_pos(1) as usize, input);
                 } else {
                     bump_sp = false;
                     self.state = ProgramState::WaitingForInput;
@@ -260,14 +298,17 @@ impl Program {
                 }
             }
             Opcode::LessThan => {
-                let pos = self.get_mem((self.sp + 3) as usize);
+                let pos = self.get_pos(3);
                 let result = if self.param(1) < self.param(2) { 1 } else { 0 };
                 self.set_mem(pos as usize, result);
             }
             Opcode::Equals => {
-                let pos = self.get_mem((self.sp + 3) as usize);
+                let pos = self.get_pos(3);
                 let result = if self.param(1) == self.param(2) { 1 } else { 0 };
                 self.set_mem(pos as usize, result);
+            }
+            Opcode::RelativeBaseOffset => {
+                self.relative_base += self.param(1);
             }
             Opcode::Halt => {
                 self.state = ProgramState::Halted;
@@ -347,9 +388,34 @@ fn test_get_set_extra_memory() {
 }
 
 #[test]
+fn test_relative_mode() {
+    let v = vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99];
+    let mut p = Program::new(&v);
+    p.run_till_halted_or_blocked();
+    let mut v2 = Vec::new();
+    while let Some(i) = p.get_output() {
+        v2.push(i);
+    }
+    assert_eq!(v, v2);
+}
+
+#[test]
 fn test_large_numbers() {
     let v = vec![104,1125899906842624,99];
     let mut p = Program::new(&v);
     p.run_till_halted_or_blocked();
     assert_eq!(p.get_output().unwrap(), 1125899906842624);
+}
+
+#[test]
+fn test_relative_mode2() {
+    let v = vec![109,19,204,-34,99];
+
+    let mut p = Program::new(&v);
+    p.relative_base = 2000;
+    p.set_mem(1985, 333333);
+    p.run_till_halted_or_blocked();
+
+    assert_eq!(p.get_output().unwrap(), 333333);
+    assert_eq!(p.relative_base, 2019);
 }
