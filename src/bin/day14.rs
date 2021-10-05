@@ -8,7 +8,7 @@ use nom::{
     character::complete::{alpha1, char, digit1},
     combinator::{map, map_res},
     IResult,
-    multi::separated_list,
+    multi::separated_list1,
     sequence::separated_pair
 };
 
@@ -57,7 +57,7 @@ fn parse_resource_specifier(input: &str) -> IResult<&str, ResourceSpecifier> {
 
 fn parse_resource_rule_tuple(input: &str) -> IResult<&str, (Vec<ResourceSpecifier>, ResourceSpecifier)> {
     separated_pair(
-        separated_list(tag(", "), parse_resource_specifier),
+        separated_list1(tag(", "), parse_resource_specifier),
         tag(" => "),
         parse_resource_specifier
     )(input)
@@ -68,7 +68,7 @@ fn parse_resource_rule(input: &str) -> IResult<&str, ResourceRule> {
 }
 
 fn parse_resource_rules_vec(input: &str) -> IResult<&str, Vec<ResourceRule>> {
-    separated_list(char('\n'), parse_resource_rule)(input)
+    separated_list1(char('\n'), parse_resource_rule)(input)
 }
 
 fn parse_resource_rules_hashmap(input: &str) -> IResult<&str, HashMap<String, ResourceRule>> {

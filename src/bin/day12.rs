@@ -6,7 +6,7 @@ use nom::{
     character::complete::{anychar, char, digit1},
     combinator::{map, map_res, opt, recognize},
     IResult,
-    multi::separated_list,
+    multi::separated_list1,
     sequence::{delimited, pair, preceded, terminated, tuple}
 };
 
@@ -213,7 +213,7 @@ fn parse_moon(input: &str) -> IResult <&str, Moon> {
 }
 
 fn parse_moons(input: &str) -> IResult <&str, Vec<Moon>> {
-    separated_list(char('\n'), parse_moon)(input)
+    separated_list1(char('\n'), parse_moon)(input)
 }
 
 fn main() -> io::Result<()> {

@@ -5,7 +5,7 @@ use nom::{
     branch::alt,
     character::complete::{char, digit1},
     combinator::{map, map_res, value, verify},
-    multi::separated_list,
+    multi::separated_list1,
     sequence::tuple,
     IResult,
 };
@@ -119,12 +119,12 @@ fn parse_segment(input: &str) -> IResult<&str, Segment> {
 }
 
 fn parse_wire(input: &str) -> IResult<&str, Vec<Segment>> {
-    let wire_parser = separated_list(char(','), parse_segment);
+    let wire_parser = separated_list1(char(','), parse_segment);
     verify(wire_parser, |v: &Vec<Segment>| v.len() > 1)(input)
 }
 
 fn parse_wires(input: &str) -> IResult<&str, Vec<Vec<Segment>>> {
-    separated_list(char('\n'), parse_wire)(input)
+    separated_list1(char('\n'), parse_wire)(input)
 }
 
 fn get_intersections(v1: &Vec<Segment>, v2: &Vec<Segment>) -> Vec<(i32, i32, i32)> {

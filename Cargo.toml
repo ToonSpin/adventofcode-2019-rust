@@ -9,4 +9,4 @@ name = "intcode"
 path = "src/lib/intcode.rs"
 
 [dependencies]
-nom = "5"
+nom = "7"
