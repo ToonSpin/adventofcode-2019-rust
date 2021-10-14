@@ -30,7 +30,7 @@ fn main() -> io::Result<()> {
     let mut ball_x = 0;
     let mut score = 0;
 
-    'mainloop: loop {
+    loop {
         program.run_till_halted_or_blocked();
 
         while program.has_output() {
