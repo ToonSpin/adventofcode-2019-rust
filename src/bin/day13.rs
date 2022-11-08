@@ -10,7 +10,7 @@ fn main() -> io::Result<()> {
     let input = input.split('\n').next().unwrap();
     let mut input: Vec<Number> = input.split(',').map(|s| s.parse::<Number>().unwrap()).collect();
 
-    let mut program = Program::new(&input);
+    let mut program = Program::new(input.clone());
     program.run_till_halted_or_blocked();
 
     let mut num_blocks = 0;
@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
     println!("Number of blocks in the game: {}", num_blocks);
 
     input[0] = 2;
-    let mut program = Program::new(&input);
+    let mut program = Program::new(input);
     let mut paddle_x = 0;
     let mut ball_x = 0;
     let mut score = 0;

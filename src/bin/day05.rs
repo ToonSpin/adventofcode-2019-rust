@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use intcode::Program;
 use intcode::Number;
 
-fn get_diagnostic_code(program: &Vec<Number>, first_input: Number) -> Number {
+fn get_diagnostic_code(program: Vec<Number>, first_input: Number) -> Number {
     let mut p = Program::new(program);
 
     p.push_input(first_input);
@@ -22,8 +22,8 @@ fn main() -> io::Result<()> {
     
     let program = input.clone();
 
-    println!("Diagnostic code for system ID {}: {}", 1, get_diagnostic_code(&program, 1));
-    println!("Diagnostic code for system ID {}: {}", 5, get_diagnostic_code(&program, 5));
+    println!("Diagnostic code for system ID {}: {}", 1, get_diagnostic_code(program.clone(), 1));
+    println!("Diagnostic code for system ID {}: {}", 5, get_diagnostic_code(program, 5));
 
     Ok(())
 }

@@ -80,10 +80,10 @@ fn main() -> io::Result<()> {
     let input = input.split('\n').next().unwrap();
     let input: Vec<Number> = input.split(',').map(|s| s.parse::<Number>().unwrap()).collect();
 
-    let hull = paint(Program::new(&input), Color::Black);
+    let hull = paint(Program::new(input.clone()), Color::Black);
     println!("Number of cells that were painted: {}", hull.len());
 
-    let hull = paint(Program::new(&input), Color::White);
+    let hull = paint(Program::new(input), Color::White);
 
     let mut field = Vec::new();
     for _y in 0..6 {
