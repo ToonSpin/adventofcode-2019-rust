@@ -2,11 +2,8 @@
 name = "adventofcode-rust-2019"
 version = "0.1.0"
 authors = ["Toon Spin <toon.spin@gmail.com>"]
-edition = "2018"
-
-[lib]
-name = "intcode"
-path = "src/lib/intcode.rs"
+edition = "2021"
 
 [dependencies]
-nom = "7"
+nom = { version = "7" }
+intcode = { git = "ssh://git@github.com:22/ToonSpin/intcode.git", branch = "main" }
